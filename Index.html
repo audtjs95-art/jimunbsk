@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>영어 지문 인터랙티브 학습기</title>
+    <!-- Mermaid.js (지문 구조도 자동 생성용) -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; padding: 20px; max-width: 900px; margin: 0 auto; background: #f9f9f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 단어 커서 툴팁 스타일 */
+        .word { position: relative; display: inline-block; border-bottom: 1px dotted #007bff; color: #007bff; cursor: pointer; margin: 0 2px; }
+        .word:hover::after {
+            content: attr(data-meaning);
+            position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+            background-color: #333; color: #fff; padding: 4px 8px; border-radius: 4px;
+            font-size: 12px; white-space: nowrap; z-index: 10;
+        }
+
+        /* 구문 하이라이팅 */
+        .subject { color: #d9534f; font-weight: bold; } /* 주어: 빨강 */
+        .verb { color: #0275d8; font-weight: bold; }    /* 동사: 파랑 */
+        .object { color: #5cb85c; font-weight: bold; }  /* 목적어: 초록 */
+    </style>
+</head>
+<body>
+
+    <h2>📘 영어 지문 자동 분석 웹앱</h2>
+    
+    <!-- JSON 데이터 입력창 -->
+    <div class="card">
+        <h3>1. AI가 생성한 JSON 데이터 붙여넣기</h3>
+        <textarea id="jsonInput" rows="5" style="width:100%;" placeholder="AI가 출력해준 JSON 전체 코드를 여기에 붙여넣으세요."></textarea>
+        <button onclick="renderApp()" style="margin-top:10px; padding:10px 20px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">학습 자료 생성하기</button>
+    </div>
+
+    <!-- 결과 출력 영역 -->
+    <div id="outputArea" style="display:none;">
+        <div class="card">
+            <h3>🔤 단어 툴팁 & 직독직해 (단어에 마우스를 올려보세요)</h3>
+            <div id="interactiveText" style="font-size: 18px;"></div>
+        </div>
+
+        <div class="card">
+            <h3>📊 지문 구조도</h3>
+            <div class="mermaid" id="mermaidGraph"></div>
+        </div>
+
+        <div class="card">
+            <h3>📝 전체 한글 해석</h3>
+            <p id="fullTranslation"></p>
+        </div>
+    </div>
+
+    <script>
+        function renderApp() {
+            try {
+                const data = JSON.parse(document.getElementById('jsonInput').value);
+                
+                // 1. 단어 툴팁 적용 Text 생성
+                let textHtml = "";
+                data.segmented_text.forEach(item => {
+                    let words = item.chunk.split(' ');
+                    words.forEach(w => {
+                        // 단어 목록에서 뜻 찾기
+                        let found = data.words.find(wObj => w.toLowerCase().includes(wObj.word.toLowerCase()));
+                        let meaning = found ? found.meaning : "";
+                        if(meaning) {
+                            textHtml += `<span class="word" data-meaning="${meaning}">${w}</span> `;
+                        } else {
+                            textHtml += `${w} `;
+                        }
+                    });
+                    textHtml += ` <span style="color:#ccc;">/</span> `;
+                });
+                document.getElementById('interactiveText').innerHTML = textHtml;
+
+                // 2. 전체 해석 및 구조도 입력
+                document.getElementById('fullTranslation').innerText = data.full_translation;
+                
+                // 3. Mermaid 지문구조도 바인딩
+                const graphDiv = document.getElementById('mermaidGraph');
+                graphDiv.removeAttribute('data-processed');
+                graphDiv.innerHTML = data.structure_chart;
+                mermaid.contentLoaded();
+
+                document.getElementById('outputArea').style.display = 'block';
+                alert('학습 자료 생성이 완료되었습니다!');
+            } catch (e) {
+                alert('JSON 형식이 올바르지 않습니다. AI 답변 전체를 정확히 붙여넣었는지 확인해주세요.');
+            }
+        }
+    </script>
+</body>
+</html>
